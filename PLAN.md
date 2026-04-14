@@ -48,18 +48,24 @@
 
 ## MVP Scope
 
+**Legislature:** 10th (2024-2029, current). For the 3 target files, include full history from 9th term (2019-2024) since that's when the legislative action happened.
+
 **3 target legislative files:**
 1. AI Act (2021/0106(COD)) - ITRE/IMCO/LIBE
 2. Corporate Sustainability Due Diligence Directive (CSDDD) - JURI
 3. Digital Markets Act (DMA) - IMCO
 
-**Content:**
-- Full legislative text at each stage for all 3 files
-- 5-10 committee hearing transcripts related to these files
-- Plenary debate transcripts (CRE) for debates on these files
-- Roll-call vote data for votes on these files
+**Core dataset (all structured, API-accessible, English):**
+- CRE plenary transcripts - who said what, when, on which file
+- Committee reports and opinions - formal written outputs per dossier
+- Written and oral questions - MEPs to Commission
+- Amendments - tabled by MEPs in committee and plenary
+- Roll-call voting records - per MEP
 - MEP profiles for members of relevant committees
-- Parliamentary questions related to these topics
+
+**Parked for Phase 2:**
+- Committee hearing transcription (video → text pipeline)
+- Hearing transcript viewer with video sync
 
 ---
 
@@ -80,11 +86,9 @@
 - Parliamentary questions ingestion
 - OEIL procedure tracking data
 
-### Feature 3: Committee Hearing Transcription Pipeline
-- Audio extraction from EP Multimedia (HLS + ffmpeg)
-- Transcription via AssemblyAI with speaker diarisation
-- Speaker attribution (attendance lists + handover phrase parsing + LLM cleanup)
-- Transcript ingestion into search index
+### Feature 3: Committee Hearing Transcription Pipeline (PHASE 2)
+- Parked - structured data MVP first
+- Audio extraction, transcription and speaker attribution deferred
 
 ### Feature 4: Search and AI Answers
 - Semantic search across all content types
@@ -106,11 +110,10 @@
 
 ## Build Order
 
-**Week 1:** Foundation + Transcription start (parallel)
-**Week 2:** Data ingestion (MEPs, legislation, plenary transcripts)
-**Week 3:** Votes, questions, procedures + search pipeline
-**Week 4:** Transcription completion + frontend MVP
-**Week 5:** Polish, testing, deploy
+**Week 1:** Foundation + MEP data ingestion
+**Week 2:** Data ingestion (legislation, CRE plenary, amendments, questions)
+**Week 3:** Votes, procedures + search pipeline + frontend MVP
+**Week 4:** Polish, testing, deploy
 
 ---
 
