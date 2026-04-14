@@ -87,12 +87,17 @@ if (env.NODE_ENV === "production") {
   });
 } else {
   // Development: Vite dev server handles frontend
-  const { createServer } = await import("vite");
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
-  app.use(vite.middlewares);
+  // Only imported in dev - not available in production builds
+  try {
+    const { createServer } = await import("vite");
+    const vite = await createServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } catch {
+    console.log("[EUParlIQ] Vite not available - running in production mode");
+  }
 }
 
 // ---------------------------------------------------------------------------
