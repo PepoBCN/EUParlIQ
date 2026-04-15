@@ -9,6 +9,9 @@ import type { Context } from "./trpc.js";
 
 const app = express();
 
+// Trust Railway's proxy for correct IP detection (rate limiting, X-Forwarded-For)
+app.set("trust proxy", 1);
+
 // ---------------------------------------------------------------------------
 // Security
 // ---------------------------------------------------------------------------
