@@ -2,7 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { db } from "./_core/db.js";
 import { procedures, documents } from "../drizzle/schema.js";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 
 export const procedureRouter = router({
   /** List all legislative procedures */
@@ -25,9 +25,7 @@ export const procedureRouter = router({
         conditions.push(eq(procedures.responsibleCommittee, input.committee));
       }
 
-      const whereClause = conditions.length > 0
-        ? sql`${sql.join(conditions, sql` AND `)}`
-        : undefined;
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
       const [countResult, items] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(procedures).where(whereClause),

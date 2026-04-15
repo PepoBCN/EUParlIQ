@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { db } from "./_core/db.js";
-import { meps, documents, hearings, votingRecord, documentChunks } from "../drizzle/schema.js";
+import { meps, documents, hearings, votingRecord } from "../drizzle/schema.js";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { COMMITTEES, COMMITTEE_BY_SLUG } from "../shared/committees.js";
 
