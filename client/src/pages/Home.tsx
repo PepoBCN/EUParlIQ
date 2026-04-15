@@ -4,6 +4,7 @@ import DOMPurify from "dompurify";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useStreamingSearch, type SearchSource } from "@/hooks/useStreamingSearch";
+import { trpc } from "@/lib/trpc";
 import { COMMITTEES } from "@shared/committees";
 
 const COMMITTEE_COLORS: Record<string, string> = Object.fromEntries(
@@ -65,6 +66,8 @@ export default function Home() {
 
   const { phase, answer, sources, followUpQuestions, error, isSearching, search, reset } =
     useStreamingSearch();
+
+  const { data: stats } = trpc.committees.stats.useQuery();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,22 +215,22 @@ export default function Home() {
         )}
 
         {/* Stats - only show when idle */}
-        {phase === "idle" && (
+        {phase === "idle" && stats && (
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-center max-w-3xl mx-auto">
             <div>
-              <p className="text-3xl font-bold">3</p>
+              <p className="text-3xl font-bold">{stats.totalProcedures.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Legislative files</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">6</p>
+              <p className="text-3xl font-bold">{stats.committees}</p>
               <p className="text-xs text-muted-foreground">Committees</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">1,722</p>
+              <p className="text-3xl font-bold">{stats.totalSpeeches.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Debate speeches</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">719</p>
+              <p className="text-3xl font-bold">{stats.totalMeps.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">MEPs indexed</p>
             </div>
           </div>

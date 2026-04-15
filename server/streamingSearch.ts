@@ -316,20 +316,36 @@ export function registerStreamingSearch(app: Express) {
       const contextXml = buildContextXml(topResults, votingContext, mepContext);
 
       const client = getAnthropicClient();
-      const stream = client.messages.stream({
-        model: MODELS[mode],
-        max_tokens: mode === "quick" ? 1024 : 4096,
-        system: SYSTEM_PROMPT,
-        messages: [{
-          role: "user",
-          content: contextXml + "\n\nQuestion: " + query,
-        }],
-      });
+      try {
+        const stream = client.messages.stream({
+          model: MODELS[mode],
+          max_tokens: mode === "quick" ? 1024 : 4096,
+          system: SYSTEM_PROMPT,
+          messages: [{
+            role: "user",
+            content: contextXml + "\n\nQuestion: " + query,
+          }],
+        });
 
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          sseWrite(res, { type: "text", text: event.delta.text });
+        for await (const event of stream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            sseWrite(res, { type: "text", text: event.delta.text });
+          }
         }
+      } catch (llmErr) {
+        const msg = llmErr instanceof Error ? llmErr.message : String(llmErr);
+        console.error("[search] LLM error:", msg);
+        if (msg.includes("401") || msg.includes("authentication")) {
+          sseWrite(res, { type: "error", message: "API authentication failed." });
+        } else if (msg.includes("429") || msg.includes("rate")) {
+          sseWrite(res, { type: "error", message: "Rate limited. Try again in a moment." });
+        } else if (msg.includes("model") || msg.includes("not_found")) {
+          sseWrite(res, { type: "error", message: "AI model unavailable." });
+        } else {
+          sseWrite(res, { type: "error", message: `AI answer failed: ${msg.slice(0, 100)}` });
+        }
+        res.end();
+        return;
       }
 
       // 7. Send follow-up questions

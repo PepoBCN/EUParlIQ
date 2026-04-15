@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { db } from "./_core/db.js";
-import { meps, documents, hearings, votingRecord } from "../drizzle/schema.js";
+import { meps, documents, hearings, votingRecord, procedures, documentChunks } from "../drizzle/schema.js";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { COMMITTEES, COMMITTEE_BY_SLUG } from "../shared/committees.js";
 
@@ -30,11 +30,15 @@ export const committeeRouter = router({
         .from(meps)
         .where(sql`${meps.committees}::text LIKE ${"%" + committee.abbreviation + "%"}`);
 
-      // Get document count
+      // Get document count - match by abbreviation, full name, or target file
+      const docMatchValues = [committee.abbreviation, committee.name];
+      if (committee.targetFile) {
+        docMatchValues.push(committee.targetFile.replace(/\s*\(.*\)$/, ""));
+      }
       const docResults = await db
         .select({ count: sql<number>`count(*)` })
         .from(documents)
-        .where(eq(documents.committee, committee.name));
+        .where(sql`${documents.committee} IN (${sql.join(docMatchValues.map(v => sql`${v}`), sql`, `)})`);
 
       // Get hearing count
       const hearingResults = await db
@@ -52,14 +56,20 @@ export const committeeRouter = router({
 
   /** Get aggregate stats across all committees */
   stats: publicProcedure.query(async () => {
-    const totalDocs = await db.select({ count: sql<number>`count(*)` }).from(documents);
-    const totalMeps = await db.select({ count: sql<number>`count(*)` }).from(meps).where(eq(meps.isActive, true));
-    const totalHearings = await db.select({ count: sql<number>`count(*)` }).from(hearings);
+    const [totalDocs, totalMepsResult, totalHearingsResult, totalProcs, totalSpeeches] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(documents),
+      db.select({ count: sql<number>`count(*)` }).from(meps).where(eq(meps.isActive, true)),
+      db.select({ count: sql<number>`count(*)` }).from(hearings),
+      db.select({ count: sql<number>`count(*)` }).from(procedures),
+      db.select({ count: sql<number>`count(*)` }).from(documentChunks).where(eq(documentChunks.chunkType, "plenary_debate")),
+    ]);
 
     return {
       totalDocuments: Number(totalDocs[0]?.count ?? 0),
-      totalMeps: Number(totalMeps[0]?.count ?? 0),
-      totalHearings: Number(totalHearings[0]?.count ?? 0),
+      totalMeps: Number(totalMepsResult[0]?.count ?? 0),
+      totalHearings: Number(totalHearingsResult[0]?.count ?? 0),
+      totalProcedures: Number(totalProcs[0]?.count ?? 0),
+      totalSpeeches: Number(totalSpeeches[0]?.count ?? 0),
       committees: COMMITTEES.length,
     };
   }),
@@ -107,8 +117,15 @@ export const committeeRouter = router({
       const committee = COMMITTEE_BY_SLUG[input.slug];
       if (!committee) return { items: [], total: 0 };
 
+      // Match documents by abbreviation, full name, or target file name
+      const matchValues = [committee.abbreviation, committee.name];
+      if (committee.targetFile) {
+        matchValues.push(committee.targetFile.replace(/\s*\(.*\)$/, ""));
+      }
+      const docWhere = sql`${documents.committee} IN (${sql.join(matchValues.map(v => sql`${v}`), sql`, `)})`;
+
       const [countResult, items] = await Promise.all([
-        db.select({ count: sql<number>`count(*)` }).from(documents).where(eq(documents.committee, committee.name)),
+        db.select({ count: sql<number>`count(*)` }).from(documents).where(docWhere),
         db
           .select({
             id: documents.id,
@@ -120,7 +137,7 @@ export const committeeRouter = router({
             procedureReference: documents.procedureReference,
           })
           .from(documents)
-          .where(eq(documents.committee, committee.name))
+          .where(docWhere)
           .orderBy(desc(documents.publicationDate))
           .limit(input.limit)
           .offset(input.offset),
@@ -139,13 +156,14 @@ export const committeeRouter = router({
       const committee = COMMITTEE_BY_SLUG[input.slug];
       if (!committee) return { items: [], total: 0 };
 
-      // Get distinct votes (roll-call divisions) that mention this committee
-      // votingRecord has per-MEP rows, so we aggregate by divisionId
+      // Match by committee field (abbreviation from HowTheyVote) or title keywords as fallback
+      const whereClause = sql`${votingRecord.committee} = ${committee.abbreviation} OR (${votingRecord.committee} = '' AND (${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}))`;
+
       const [countResult, items] = await Promise.all([
         db
           .select({ count: sql<number>`count(DISTINCT ${votingRecord.divisionId})` })
           .from(votingRecord)
-          .where(sql`${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}`),
+          .where(whereClause),
         db
           .select({
             divisionId: votingRecord.divisionId,
@@ -157,7 +175,7 @@ export const committeeRouter = router({
             url: sql<string>`MIN(${votingRecord.url})`.as("url"),
           })
           .from(votingRecord)
-          .where(sql`${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}`)
+          .where(whereClause)
           .groupBy(votingRecord.divisionId)
           .orderBy(desc(sql`MIN(${votingRecord.date})`))
           .limit(input.limit)

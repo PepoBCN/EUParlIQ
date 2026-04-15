@@ -161,3 +161,34 @@ export const GROUP_COLORS: Record<string, string> = Object.fromEntries(
 export const GROUP_NAMES: Record<string, string> = Object.fromEntries(
   POLITICAL_GROUPS.map((g) => [g.abbreviation, g.name])
 );
+
+// ---------------------------------------------------------------------------
+// Committee normalisation
+// ---------------------------------------------------------------------------
+
+/** Build a lookup from all known committee string variants to abbreviation */
+const COMMITTEE_NORMALISE_MAP: Record<string, string> = {};
+for (const c of COMMITTEES) {
+  COMMITTEE_NORMALISE_MAP[c.abbreviation] = c.abbreviation;
+  COMMITTEE_NORMALISE_MAP[c.abbreviation.toLowerCase()] = c.abbreviation;
+  COMMITTEE_NORMALISE_MAP[c.name] = c.abbreviation;
+  COMMITTEE_NORMALISE_MAP[c.name.toLowerCase()] = c.abbreviation;
+  COMMITTEE_NORMALISE_MAP[c.shortName] = c.abbreviation;
+  COMMITTEE_NORMALISE_MAP[c.shortName.toLowerCase()] = c.abbreviation;
+  if (c.targetFile) {
+    // e.g. "AI Act (responsible)" → "ITRE"
+    COMMITTEE_NORMALISE_MAP[c.targetFile] = c.abbreviation;
+    // Also match just the file name without the role suffix
+    const baseName = c.targetFile.replace(/\s*\(.*\)$/, "");
+    COMMITTEE_NORMALISE_MAP[baseName] = c.abbreviation;
+    COMMITTEE_NORMALISE_MAP[baseName.toLowerCase()] = c.abbreviation;
+  }
+}
+
+/**
+ * Normalise any committee string variant to an abbreviation.
+ * Returns the abbreviation if matched, or the original string if not.
+ */
+export function normaliseCommittee(value: string): string {
+  return COMMITTEE_NORMALISE_MAP[value] || COMMITTEE_NORMALISE_MAP[value.toLowerCase()] || value;
+}

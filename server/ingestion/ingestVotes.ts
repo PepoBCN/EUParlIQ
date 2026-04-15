@@ -181,6 +181,28 @@ async function main() {
 
   console.log(`[votes] Done! Total member votes inserted: ${totalInserted}`);
 
+  // Backfill missing vote totals from member votes
+  console.log("[votes] Backfilling missing vote totals...");
+  const backfilled = await client`
+    UPDATE voting_record vr
+    SET
+      total_for = agg.total_for,
+      total_against = agg.total_against,
+      total_abstain = agg.total_abstain
+    FROM (
+      SELECT
+        division_id,
+        COUNT(*) FILTER (WHERE member_voted_for = true) as total_for,
+        COUNT(*) FILTER (WHERE member_voted_for = false) as total_against,
+        0 as total_abstain
+      FROM voting_record
+      GROUP BY division_id
+    ) agg
+    WHERE vr.division_id = agg.division_id
+      AND vr.total_for IS NULL
+  `;
+  console.log(`[votes] Backfilled totals for ${backfilled.count} rows`);
+
   // Summary
   const countResult = await client`SELECT COUNT(*) as count FROM voting_record`;
   console.log(`[votes] Total records in DB: ${countResult[0].count}`);
