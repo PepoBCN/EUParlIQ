@@ -5,14 +5,11 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useStreamingSearch, type SearchSource } from "@/hooks/useStreamingSearch";
 import { trpc } from "@/lib/trpc";
-import { COMMITTEES } from "@shared/committees";
-
-const COMMITTEE_COLORS: Record<string, string> = Object.fromEntries(
-  COMMITTEES.map((c) => [c.name, c.color])
-);
+import { COMMITTEES, COMMITTEE_BY_ABBR, normaliseCommittee } from "@shared/committees";
 
 function getCommitteeColor(committee: string): string {
-  return COMMITTEE_COLORS[committee] || "bg-gray-400";
+  const abbr = normaliseCommittee(committee);
+  return COMMITTEE_BY_ABBR[abbr]?.color || "bg-gray-400";
 }
 
 function SourceCard({ source, index }: { source: SearchSource; index: number }) {

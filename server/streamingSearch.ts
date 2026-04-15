@@ -96,10 +96,10 @@ async function fetchVotingContext(query: string): Promise<string> {
     const rebellions = memberVotes.filter((v) => v.votedAgainstGroup).length;
 
     const voteLines = memberVotes.slice(0, 15).map((v) =>
-      `    <vote date="${v.date}" title="${v.title}" votedFor="${v.memberVotedFor}" votedAgainstGroup="${v.votedAgainstGroup}" />`
+      `    <vote date="${escXmlAttr(v.date)}" title="${escXmlAttr(v.title)}" votedFor="${v.memberVotedFor}" votedAgainstGroup="${v.votedAgainstGroup}" />`
     ).join("\n");
 
-    return `\n<voting_record mep="${name}" totalVotes="${totalVotes}" rebellions="${rebellions}" group="${memberVotes[0].politicalGroup}">
+    return `\n<voting_record mep="${escXmlAttr(name)}" totalVotes="${totalVotes}" rebellions="${rebellions}" group="${escXmlAttr(memberVotes[0].politicalGroup || "")}">
 ${voteLines}
 </voting_record>\n`;
   }
@@ -119,7 +119,7 @@ async function fetchMepContext(query: string): Promise<string> {
   if (results.length === 0) return "";
 
   const mepLines = results.map((m) =>
-    `  <mep name="${m.name}" country="${m.country}" group="${m.politicalGroup}" committees="${JSON.stringify(m.committees?.map((c: { abbreviation: string }) => c.abbreviation) || [])}" />`
+    `  <mep name="${escXmlAttr(m.name)}" country="${escXmlAttr(m.country)}" group="${escXmlAttr(m.politicalGroup)}" committees="${escXmlAttr(JSON.stringify(m.committees?.map((c: { abbreviation: string }) => c.abbreviation) || []))}" />`
   ).join("\n");
 
   return `\n<mep_profiles>\n${mepLines}\n</mep_profiles>\n`;
@@ -169,13 +169,13 @@ async function semanticSearch(queryEmbedding: number[], limit: number = 15): Pro
   return results.map((r: Record<string, unknown>) => ({
     id: r.id as number,
     documentId: r.document_id as number,
-    content: r.content as string,
-    sectionHeading: r.section_heading as string | null,
+    content: decodeHtmlEntities(r.content as string),
+    sectionHeading: r.section_heading ? decodeHtmlEntities(r.section_heading as string) : null,
     chunkType: r.chunk_type as string,
-    speakerName: r.speaker_name as string | null,
+    speakerName: r.speaker_name ? decodeHtmlEntities(r.speaker_name as string) : null,
     speakerRole: r.speaker_role as string | null,
     similarity: parseFloat(r.similarity as string),
-    docTitle: r.doc_title as string,
+    docTitle: decodeHtmlEntities(r.doc_title as string),
     docUrl: r.doc_url as string,
     docReference: r.doc_reference as string,
     docCommittee: r.doc_committee as string,
@@ -183,13 +183,33 @@ async function semanticSearch(queryEmbedding: number[], limit: number = 15): Pro
   }));
 }
 
+// ─── Text Helpers ─────────────────────────────────────────────────────────
+/** Decode common HTML entities that may be stored in DB text from HTML scraping */
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
+function escXmlAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function escXmlText(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // ─── Build context XML for Claude ─────────────────────────────────────────
 function buildContextXml(results: SearchResult[], votingContext: string, mepContext: string): string {
   const sources = results.map((r, i) => {
-    const speaker = r.speakerName ? ` speaker="${r.speakerName}"` : "";
-    const role = r.speakerRole ? ` role="${r.speakerRole}"` : "";
-    return `  <source index="${i + 1}" title="${r.docTitle}" reference="${r.docReference}" committee="${r.docCommittee}" date="${r.docDate}" type="${r.chunkType}" similarity="${(r.similarity * 100).toFixed(1)}%"${speaker}${role}>
-    ${r.content.substring(0, 2000)}
+    const speaker = r.speakerName ? ` speaker="${escXmlAttr(r.speakerName)}"` : "";
+    const role = r.speakerRole ? ` role="${escXmlAttr(r.speakerRole)}"` : "";
+    return `  <source index="${i + 1}" title="${escXmlAttr(r.docTitle)}" reference="${escXmlAttr(r.docReference)}" committee="${escXmlAttr(r.docCommittee)}" date="${escXmlAttr(r.docDate)}" type="${escXmlAttr(r.chunkType || "")}" similarity="${(r.similarity * 100).toFixed(1)}%"${speaker}${role}>
+    ${escXmlText(r.content.substring(0, 2000))}
   </source>`;
   }).join("\n");
 

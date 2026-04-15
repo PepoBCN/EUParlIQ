@@ -13,10 +13,10 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "ingest:meps": "tsx server/ingestion/ingestMeps.ts",
-    "ingest:legislation": "tsx server/ingestion/ingestLegislation.ts",
+    "ingest:legislation": "tsx server/ingestion/ingestProcedures.ts",
     "ingest:plenary": "tsx server/ingestion/ingestPlenary.ts",
     "ingest:votes": "tsx server/ingestion/ingestVotes.ts",
-    "ingest:questions": "tsx server/ingestion/ingestQuestions.ts"
+    "ingest:all": "pnpm ingest:meps && pnpm ingest:legislation && pnpm ingest:plenary && pnpm ingest:votes"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
