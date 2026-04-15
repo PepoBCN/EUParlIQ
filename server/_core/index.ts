@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { env } from "./env.js";
 import { appRouter } from "../routers.js";
+import { registerStreamingSearch } from "../streamingSearch.js";
 import type { Context } from "./trpc.js";
 
 const app = express();
@@ -58,6 +59,12 @@ app.use(express.json({ limit: "1mb" }));
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString(), product: "EUParlIQ" });
 });
+
+// ---------------------------------------------------------------------------
+// Streaming Search (SSE)
+// ---------------------------------------------------------------------------
+
+registerStreamingSearch(app);
 
 // ---------------------------------------------------------------------------
 // tRPC

@@ -24,7 +24,7 @@ const db = drizzle(client);
 
 const CACHE_DIR = path.join(import.meta.dirname, "../../.cache");
 const COMPRESSED_PATH = path.join(CACHE_DIR, "ep_dossiers.json.lz");
-const JSON_PATH = path.join(CACHE_DIR, "ep_dossiers.json");
+const TARGET_JSON_PATH = path.join(CACHE_DIR, "target_dossiers.json");
 
 // Our 3 target legislative files
 const TARGET_REFS = [
@@ -66,27 +66,35 @@ async function loadDossiers(): Promise<ParltrackDossier[]> {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
   }
 
-  const needsDownload = !fs.existsSync(COMPRESSED_PATH) ||
-    Date.now() - fs.statSync(COMPRESSED_PATH).mtimeMs > 24 * 60 * 60 * 1000;
+  // Check if we already have the extracted target dossiers
+  if (fs.existsSync(TARGET_JSON_PATH)) {
+    console.log("[procedures] Using cached target dossiers");
+    const raw = fs.readFileSync(TARGET_JSON_PATH, "utf-8");
+    return JSON.parse(raw);
+  }
 
+  // Download and extract target dossiers using Python (Node can't handle the full 500MB+ JSON)
+  const needsDownload = !fs.existsSync(COMPRESSED_PATH);
   if (needsDownload) {
     console.log("[procedures] Downloading Parltrack dossier dump...");
     execSync(`curl -s --max-time 120 "https://parltrack.org/dumps/ep_dossiers.json.lz" -o "${COMPRESSED_PATH}"`);
-
-    console.log("[procedures] Decompressing...");
-    execSync(`python3 -c "
-import lzma
-with open('${COMPRESSED_PATH}','rb') as f:
-    data = lzma.decompress(f.read())
-with open('${JSON_PATH}','wb') as f:
-    f.write(data)
-print('Decompressed:', len(data), 'bytes')
-"`);
-  } else {
-    console.log("[procedures] Using cached dossier dump");
   }
 
-  const raw = fs.readFileSync(JSON_PATH, "utf-8");
+  console.log("[procedures] Extracting target dossiers with Python...");
+  const targetRefsJson = JSON.stringify(TARGET_REFS);
+  execSync(`python3 -c "
+import lzma, json
+with open('${COMPRESSED_PATH}','rb') as f:
+    data = lzma.decompress(f.read())
+dossiers = json.loads(data)
+targets = ${targetRefsJson}
+result = [d for d in dossiers if d.get('procedure',{}).get('reference','') in targets]
+with open('${TARGET_JSON_PATH}', 'w') as f:
+    json.dump(result, f, indent=2)
+print(f'Extracted {len(result)} target dossiers')
+"`);
+
+  const raw = fs.readFileSync(TARGET_JSON_PATH, "utf-8");
   return JSON.parse(raw);
 }
 
