@@ -1,17 +1,11 @@
 import { Link } from "wouter";
-import { Loader2, Scale, ExternalLink } from "lucide-react";
+import { Loader2, Scale } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { COMMITTEE_BY_ABBR } from "@shared/committees";
-
-const STATUS_STYLES: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-  ongoing: { variant: "outline", label: "Ongoing" },
-  adopted: { variant: "default", label: "Adopted" },
-  rejected: { variant: "destructive", label: "Rejected" },
-  withdrawn: { variant: "secondary", label: "Withdrawn" },
-};
+import { PROCEDURE_STATUS_STYLES } from "@shared/procedureStatus";
 
 export default function LegislativeIndex() {
   const { data, isLoading } = trpc.procedures.list.useQuery({ limit: 50, offset: 0 });
@@ -39,7 +33,7 @@ export default function LegislativeIndex() {
           ) : data && data.items.length > 0 ? (
             <div className="space-y-2">
               {data.items.map((proc) => {
-                const statusStyle = STATUS_STYLES[proc.status || "ongoing"];
+                const statusStyle = PROCEDURE_STATUS_STYLES[proc.status || "ongoing"];
                 const committee = proc.responsibleCommittee ? COMMITTEE_BY_ABBR[proc.responsibleCommittee] : null;
 
                 return (

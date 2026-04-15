@@ -5,13 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { COMMITTEE_BY_ABBR } from "@shared/committees";
-
-const STATUS_STYLES: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-  ongoing: { variant: "outline", label: "Ongoing" },
-  adopted: { variant: "default", label: "Adopted" },
-  rejected: { variant: "destructive", label: "Rejected" },
-  withdrawn: { variant: "secondary", label: "Withdrawn" },
-};
+import { PROCEDURE_STATUS_STYLES } from "@shared/procedureStatus";
 
 export default function Legislative() {
   const { reference } = useParams<{ reference: string }>();
@@ -43,9 +37,9 @@ export default function Legislative() {
                 {procedure.type && (
                   <Badge variant="secondary" className="text-[10px]">{procedure.type}</Badge>
                 )}
-                {procedure.status && STATUS_STYLES[procedure.status] && (
-                  <Badge variant={STATUS_STYLES[procedure.status].variant} className="text-[10px]">
-                    {STATUS_STYLES[procedure.status].label}
+                {procedure.status && PROCEDURE_STATUS_STYLES[procedure.status] && (
+                  <Badge variant={PROCEDURE_STATUS_STYLES[procedure.status].variant} className="text-[10px]">
+                    {PROCEDURE_STATUS_STYLES[procedure.status].label}
                   </Badge>
                 )}
               </div>
