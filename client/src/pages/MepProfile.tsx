@@ -211,9 +211,11 @@ export default function MepProfile() {
                                 Rebellion
                               </Badge>
                             )}
-                            <span className="text-xs text-muted-foreground">
-                              {vote.totalFor} for · {vote.totalAgainst} against · {vote.totalAbstain} abstain
-                            </span>
+                            {(vote.totalFor != null || vote.totalAgainst != null || vote.totalAbstain != null) && (
+                              <span className="text-xs text-muted-foreground">
+                                {vote.totalFor ?? 0} for · {vote.totalAgainst ?? 0} against · {vote.totalAbstain ?? 0} abstain
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
