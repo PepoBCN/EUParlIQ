@@ -5,7 +5,6 @@
  */
 
 import type { Express, Request, Response } from "express";
-import rateLimit from "express-rate-limit";
 import { generateEmbedding } from "./_core/embeddings.js";
 import { MODELS, getAnthropicClient } from "./_core/llm.js";
 import { db } from "./_core/db.js";
@@ -246,13 +245,7 @@ function sseWrite(res: Response, data: unknown) {
 
 // ─── SSE Streaming Endpoint ───────────────────────────────────────────────
 export function registerStreamingSearch(app: Express) {
-  const searchLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 20,
-    message: { error: "Too many search requests. Please try again in a minute." },
-  });
-
-  app.post("/api/search/stream", searchLimiter, async (req: Request, res: Response) => {
+  app.post("/api/search/stream", async (req: Request, res: Response) => {
     const { query, mode = "quick", limit = 15 } = req.body as {
       query: string;
       mode?: "quick" | "deep";
