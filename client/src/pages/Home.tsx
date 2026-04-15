@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Loader2, Sparkles, ExternalLink } from "lucide-react";
+import DOMPurify from "dompurify";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useStreamingSearch, type SearchSource } from "@/hooks/useStreamingSearch";
@@ -164,7 +165,7 @@ export default function Home() {
                   <div
                     ref={answerRef}
                     className="prose prose-sm max-w-none text-foreground [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm"
-                    dangerouslySetInnerHTML={{ __html: formatMarkdown(answer) }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMarkdown(answer)) }}
                   />
                 </div>
               )}

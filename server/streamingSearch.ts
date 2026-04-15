@@ -119,7 +119,7 @@ async function fetchMepContext(query: string): Promise<string> {
   if (results.length === 0) return "";
 
   const mepLines = results.map((m) =>
-    `  <mep name="${m.name}" country="${m.country}" group="${m.politicalGroup}" committees="${JSON.stringify(m.committees?.map((c: any) => c.abbreviation) || [])}" />`
+    `  <mep name="${m.name}" country="${m.country}" group="${m.politicalGroup}" committees="${JSON.stringify(m.committees?.map((c: { abbreviation: string }) => c.abbreviation) || [])}" />`
   ).join("\n");
 
   return `\n<mep_profiles>\n${mepLines}\n</mep_profiles>\n`;
@@ -166,20 +166,20 @@ async function semanticSearch(queryEmbedding: number[], limit: number = 15): Pro
     LIMIT ${limit}
   `;
 
-  return results.map((r: any) => ({
-    id: r.id,
-    documentId: r.document_id,
-    content: r.content,
-    sectionHeading: r.section_heading,
-    chunkType: r.chunk_type,
-    speakerName: r.speaker_name,
-    speakerRole: r.speaker_role,
-    similarity: parseFloat(r.similarity),
-    docTitle: r.doc_title,
-    docUrl: r.doc_url,
-    docReference: r.doc_reference,
-    docCommittee: r.doc_committee,
-    docDate: r.doc_date,
+  return results.map((r: Record<string, unknown>) => ({
+    id: r.id as number,
+    documentId: r.document_id as number,
+    content: r.content as string,
+    sectionHeading: r.section_heading as string | null,
+    chunkType: r.chunk_type as string,
+    speakerName: r.speaker_name as string | null,
+    speakerRole: r.speaker_role as string | null,
+    similarity: parseFloat(r.similarity as string),
+    docTitle: r.doc_title as string,
+    docUrl: r.doc_url as string,
+    docReference: r.doc_reference as string,
+    docCommittee: r.doc_committee as string,
+    docDate: r.doc_date as string,
   }));
 }
 

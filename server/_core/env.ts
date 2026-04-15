@@ -18,5 +18,7 @@ export const env = {
   DATABASE_URL: requireEnv("DATABASE_URL"),
   OPENAI_API_KEY: requireEnv("OPENAI_API_KEY"),
   ANTHROPIC_API_KEY: requireEnv("ANTHROPIC_API_KEY"),
-  JWT_SECRET: optionalEnv("JWT_SECRET", "dev-secret-change-in-production"),
+  JWT_SECRET: process.env.NODE_ENV === "production"
+    ? requireEnv("JWT_SECRET")
+    : optionalEnv("JWT_SECRET", "dev-secret-local-only"),
 } as const;
