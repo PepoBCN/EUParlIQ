@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { db } from "./_core/db.js";
-import { meps, documents, hearings, votingRecord } from "../drizzle/schema.js";
-import { eq, sql } from "drizzle-orm";
-import { COMMITTEES } from "../shared/committees.js";
+import { meps, documents, hearings, votingRecord, documentChunks } from "../drizzle/schema.js";
+import { eq, sql, and, desc } from "drizzle-orm";
+import { COMMITTEES, COMMITTEE_BY_SLUG } from "../shared/committees.js";
 
 export const committeeRouter = router({
   /** List all active committees with basic stats */
@@ -63,4 +63,118 @@ export const committeeRouter = router({
       committees: COMMITTEES.length,
     };
   }),
+
+  /** Get members of a committee by slug */
+  members: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const committee = COMMITTEE_BY_SLUG[input.slug];
+      if (!committee) return [];
+
+      const results = await db
+        .select({
+          epId: meps.epId,
+          name: meps.name,
+          country: meps.country,
+          politicalGroup: meps.politicalGroup,
+          photoUrl: meps.photoUrl,
+          committees: meps.committees,
+        })
+        .from(meps)
+        .where(
+          and(
+            eq(meps.isActive, true),
+            sql`${meps.committees}::text LIKE ${"%" + committee.abbreviation + "%"}`
+          )
+        )
+        .orderBy(meps.name);
+
+      // Extract the role for this specific committee
+      return results.map((mep) => {
+        const committeeEntry = (mep.committees as Array<{ abbreviation: string; role: string }> | null)
+          ?.find((c) => c.abbreviation === committee.abbreviation);
+        return {
+          ...mep,
+          role: committeeEntry?.role ?? "Member",
+        };
+      });
+    }),
+
+  /** Get documents for a committee by slug */
+  documents: publicProcedure
+    .input(z.object({ slug: z.string(), limit: z.number().min(1).max(100).default(50), offset: z.number().min(0).default(0) }))
+    .query(async ({ input }) => {
+      const committee = COMMITTEE_BY_SLUG[input.slug];
+      if (!committee) return { items: [], total: 0 };
+
+      const [countResult, items] = await Promise.all([
+        db.select({ count: sql<number>`count(*)` }).from(documents).where(eq(documents.committee, committee.name)),
+        db
+          .select({
+            id: documents.id,
+            title: documents.title,
+            publicationDate: documents.publicationDate,
+            reference: documents.reference,
+            url: documents.url,
+            documentType: documents.documentType,
+            procedureReference: documents.procedureReference,
+          })
+          .from(documents)
+          .where(eq(documents.committee, committee.name))
+          .orderBy(desc(documents.publicationDate))
+          .limit(input.limit)
+          .offset(input.offset),
+      ]);
+
+      return {
+        items,
+        total: Number(countResult[0]?.count ?? 0),
+      };
+    }),
+
+  /** Get plenary votes relevant to a committee by slug */
+  votes: publicProcedure
+    .input(z.object({ slug: z.string(), limit: z.number().min(1).max(100).default(50), offset: z.number().min(0).default(0) }))
+    .query(async ({ input }) => {
+      const committee = COMMITTEE_BY_SLUG[input.slug];
+      if (!committee) return { items: [], total: 0 };
+
+      // Get distinct votes (roll-call divisions) that mention this committee
+      // votingRecord has per-MEP rows, so we aggregate by divisionId
+      const [countResult, items] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(DISTINCT ${votingRecord.divisionId})` })
+          .from(votingRecord)
+          .where(sql`${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}`),
+        db
+          .select({
+            divisionId: votingRecord.divisionId,
+            date: sql<string>`MIN(${votingRecord.date})`.as("date"),
+            title: sql<string>`MIN(${votingRecord.title})`.as("title"),
+            totalFor: sql<number>`MAX(${votingRecord.totalFor})`.as("total_for"),
+            totalAgainst: sql<number>`MAX(${votingRecord.totalAgainst})`.as("total_against"),
+            totalAbstain: sql<number>`MAX(${votingRecord.totalAbstain})`.as("total_abstain"),
+            url: sql<string>`MIN(${votingRecord.url})`.as("url"),
+          })
+          .from(votingRecord)
+          .where(sql`${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}`)
+          .groupBy(votingRecord.divisionId)
+          .orderBy(desc(sql`MIN(${votingRecord.date})`))
+          .limit(input.limit)
+          .offset(input.offset),
+      ]);
+
+      return {
+        items: items.map((v) => ({
+          divisionId: v.divisionId,
+          date: v.date,
+          title: v.title,
+          totalFor: Number(v.totalFor ?? 0),
+          totalAgainst: Number(v.totalAgainst ?? 0),
+          totalAbstain: Number(v.totalAbstain ?? 0),
+          url: v.url,
+        })),
+        total: Number(countResult[0]?.count ?? 0),
+      };
+    }),
 });

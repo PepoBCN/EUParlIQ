@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 const Home = lazy(() => import("./pages/Home"));
 const Committee = lazy(() => import("./pages/Committee"));
 const MepProfile = lazy(() => import("./pages/MepProfile"));
+const LegislativeIndex = lazy(() => import("./pages/LegislativeIndex"));
+const Legislative = lazy(() => import("./pages/Legislative"));
 const About = lazy(() => import("./pages/About"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -24,6 +26,8 @@ export default function App() {
         <Route path="/" component={Home} />
         <Route path="/committee/:slug" component={Committee} />
         <Route path="/mep/:epId" component={MepProfile} />
+        <Route path="/legislation" component={LegislativeIndex} />
+        <Route path="/legislation/:reference" component={Legislative} />
         <Route path="/about" component={About} />
         <Route component={NotFound} />
       </Switch>

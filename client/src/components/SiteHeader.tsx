@@ -31,6 +31,12 @@ export default function SiteHeader() {
               Search
             </Link>
             <Link
+              href="/legislation"
+              className={`no-underline transition-colors ${location.startsWith("/legislation") ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Legislation
+            </Link>
+            <Link
               href="/about"
               className={`no-underline transition-colors ${location === "/about" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}
             >
