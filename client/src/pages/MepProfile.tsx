@@ -66,7 +66,9 @@ export default function MepProfile() {
                 </div>
                 {mep.committees && mep.committees.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
-                    {(mep.committees as Array<{ abbreviation: string; role: string }>).map((c, i) => {
+                    {(mep.committees as Array<{ abbreviation: string; role: string }>)
+                      .filter((c) => c.abbreviation && c.abbreviation.length <= 10 && /^[A-Z]/.test(c.abbreviation))
+                      .map((c, i) => {
                       const committeeConfig = COMMITTEE_BY_ABBR[c.abbreviation];
                       return committeeConfig ? (
                         <Link key={i} href={`/committee/${committeeConfig.slug}`}>
@@ -211,7 +213,7 @@ export default function MepProfile() {
                                 Rebellion
                               </Badge>
                             )}
-                            {(vote.totalFor != null || vote.totalAgainst != null || vote.totalAbstain != null) && (
+                            {((vote.totalFor ?? 0) > 0 || (vote.totalAgainst ?? 0) > 0 || (vote.totalAbstain ?? 0) > 0) && (
                               <span className="text-xs text-muted-foreground">
                                 {vote.totalFor ?? 0} for · {vote.totalAgainst ?? 0} against · {vote.totalAbstain ?? 0} abstain
                               </span>

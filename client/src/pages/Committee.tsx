@@ -200,11 +200,13 @@ export default function Committee() {
                           </a>
                         )}
                       </div>
-                      <div className="flex gap-4 mt-2">
-                        <span className="text-xs"><span className="font-medium text-green-600">{vote.totalFor}</span> for</span>
-                        <span className="text-xs"><span className="font-medium text-red-600">{vote.totalAgainst}</span> against</span>
-                        <span className="text-xs"><span className="font-medium text-muted-foreground">{vote.totalAbstain}</span> abstain</span>
-                      </div>
+                      {(vote.totalFor > 0 || vote.totalAgainst > 0 || vote.totalAbstain > 0) && (
+                        <div className="flex gap-4 mt-2">
+                          <span className="text-xs"><span className="font-medium text-green-600">{vote.totalFor}</span> for</span>
+                          <span className="text-xs"><span className="font-medium text-red-600">{vote.totalAgainst}</span> against</span>
+                          <span className="text-xs"><span className="font-medium text-muted-foreground">{vote.totalAbstain}</span> abstain</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {votes.total > votes.items.length && (
