@@ -80,12 +80,17 @@ function extractMepNameFromQuery(query: string): string | null {
 }
 
 // ─── Voting Context ───────────────────────────────────────────────────────
+/** Escape SQL LIKE wildcards */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, "\\$&");
+}
+
 async function fetchVotingContext(query: string): Promise<string> {
   const mepName = extractMepNameFromQuery(query);
 
   if (mepName) {
     const memberVotes = await db.select().from(votingRecord)
-      .where(like(votingRecord.mepName, `%${mepName}%`))
+      .where(like(votingRecord.mepName, `%${escapeLike(mepName)}%`))
       .orderBy(desc(votingRecord.date))
       .limit(30);
 
@@ -113,7 +118,7 @@ async function fetchMepContext(query: string): Promise<string> {
   if (!mepName) return "";
 
   const results = await db.select().from(meps)
-    .where(like(meps.name, `%${mepName}%`))
+    .where(like(meps.name, `%${escapeLike(mepName)}%`))
     .limit(3);
 
   if (results.length === 0) return "";
@@ -267,11 +272,10 @@ function sseWrite(res: Response, data: unknown) {
 // ─── SSE Streaming Endpoint ───────────────────────────────────────────────
 export function registerStreamingSearch(app: Express) {
   app.post("/api/search/stream", async (req: Request, res: Response) => {
-    const { query, mode = "quick", limit = 15 } = req.body as {
-      query: string;
-      mode?: "quick" | "deep";
-      limit?: number;
-    };
+    const body = req.body as { query?: string; mode?: string; limit?: number };
+    const query = typeof body.query === "string" ? body.query.trim() : "";
+    const mode = body.mode === "deep" ? "deep" as const : "quick" as const;
+    const limit = Math.min(Math.max(1, body.limit ?? 15), 50);
 
     if (!query || query.length < 3) {
       res.status(400).json({ error: "Query too short" });
@@ -311,7 +315,16 @@ export function registerStreamingSearch(app: Express) {
       allResults.sort((a, b) => b.similarity - a.similarity);
       const topResults = allResults.slice(0, limit);
 
-      // 4. Send sources first
+      // 4. Check for empty results
+      if (topResults.length === 0) {
+        sseWrite(res, { type: "sources", sources: [] });
+        sseWrite(res, { type: "error", message: "No relevant sources found for your query. Try different keywords." });
+        sseWrite(res, { type: "done" });
+        res.end();
+        return;
+      }
+
+      // 5. Send sources
       sseWrite(res, {
         type: "sources",
         sources: topResults.map((r) => ({
@@ -327,10 +340,10 @@ export function registerStreamingSearch(app: Express) {
         })),
       });
 
-      // 5. Fetch additional context
+      // 6. Fetch additional context (non-fatal if these fail)
       const [votingContext, mepContext] = await Promise.all([
-        fetchVotingContext(query),
-        fetchMepContext(query),
+        fetchVotingContext(query).catch(() => ""),
+        fetchMepContext(query).catch(() => ""),
       ]);
 
       // 6. Build context and stream AI answer

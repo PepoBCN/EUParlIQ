@@ -98,11 +98,13 @@ print(f'Extracted {len(result)} target dossiers')
   return JSON.parse(raw);
 }
 
-function mapProcedureType(ref: string): "COD" | "CNS" | "APP" | "NLE" | "INI" | "RSP" | "BUD" | "DEC" {
+type ProcedureType = "COD" | "CNS" | "APP" | "NLE" | "INI" | "RSP" | "BUD" | "DEC";
+
+function mapProcedureType(ref: string): ProcedureType {
   const match = ref.match(/\((\w+)\)/);
   const type = match?.[1] || "COD";
-  const valid = ["COD", "CNS", "APP", "NLE", "INI", "RSP", "BUD", "DEC"];
-  return (valid.includes(type) ? type : "COD") as any;
+  const valid: ProcedureType[] = ["COD", "CNS", "APP", "NLE", "INI", "RSP", "BUD", "DEC"];
+  return valid.includes(type as ProcedureType) ? (type as ProcedureType) : "COD";
 }
 
 function mapStatus(stage: string): "ongoing" | "adopted" | "rejected" | "withdrawn" {

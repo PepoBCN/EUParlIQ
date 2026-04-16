@@ -8,18 +8,16 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc.js";
 import { generateEmbedding } from "./_core/embeddings.js";
+import { sql } from "drizzle-orm";
+import { db } from "./_core/db.js";
 import { documentChunks, documents } from "../drizzle/schema.js";
-import { eq } from "drizzle-orm";
-import postgres from "postgres";
-
-const pgClient = postgres(process.env.DATABASE_URL!);
 
 export const searchRouter = router({
   /** Non-streaming search - returns sources without AI answer */
   query: publicProcedure
     .input(
       z.object({
-        query: z.string().min(1),
+        query: z.string().min(1).max(500),
         mode: z.enum(["quick", "deep"]).default("quick"),
         committees: z.array(z.string()).optional(),
         limit: z.number().min(1).max(20).default(10),
@@ -29,7 +27,7 @@ export const searchRouter = router({
       const embedding = await generateEmbedding(input.query);
       const embeddingStr = `[${embedding.join(",")}]`;
 
-      const results = await pgClient`
+      const results = await db.execute(sql`
         SELECT
           dc.id,
           dc.content,
@@ -44,9 +42,10 @@ export const searchRouter = router({
           d.publication_date as doc_date
         FROM document_chunks dc
         JOIN documents d ON dc.document_id = d.id
+        WHERE 1 - (dc.embedding <=> ${embeddingStr}::vector) > 0.25
         ORDER BY dc.embedding <=> ${embeddingStr}::vector
         LIMIT ${input.limit}
-      `;
+      `);
 
       return {
         query: input.query,

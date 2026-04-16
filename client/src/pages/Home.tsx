@@ -165,7 +165,7 @@ export default function Home() {
                   <div
                     ref={answerRef}
                     className="prose prose-sm max-w-none text-foreground [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMarkdown(answer)) }}
+                    dangerouslySetInnerHTML={{ __html: formatMarkdown(DOMPurify.sanitize(answer)) }}
                   />
                 </div>
               )}
