@@ -160,10 +160,10 @@ export const committeeRouter = router({
       const keywordConditions = committee.keywords
         .filter((kw: string) => kw.length > 3)
         .map((kw: string) => sql`${votingRecord.title} ILIKE ${"%" + kw + "%"}`);
-      const titleFallback = keywordConditions.length > 0
-        ? sql`(${votingRecord.committee} = '' AND (${sql.join(keywordConditions, sql` OR `)}))`
+      const titleMatch = keywordConditions.length > 0
+        ? sql`(${sql.join(keywordConditions, sql` OR `)})`
         : sql`FALSE`;
-      const whereClause = sql`${votingRecord.committee} = ${committee.abbreviation} OR ${titleFallback}`;
+      const whereClause = sql`${votingRecord.committee} = ${committee.abbreviation} OR ${titleMatch}`;
 
       const [countResult, items] = await Promise.all([
         db
