@@ -156,8 +156,14 @@ export const committeeRouter = router({
       const committee = COMMITTEE_BY_SLUG[input.slug];
       if (!committee) return { items: [], total: 0 };
 
-      // Match by committee field (abbreviation from HowTheyVote) or title keywords as fallback
-      const whereClause = sql`${votingRecord.committee} = ${committee.abbreviation} OR (${votingRecord.committee} = '' AND (${votingRecord.title} ILIKE ${"%" + committee.abbreviation + "%"} OR ${votingRecord.title} ILIKE ${"%" + committee.shortName + "%"}))`;
+      // Match by committee field (abbreviation) or title keywords from shared config
+      const keywordConditions = committee.keywords
+        .filter((kw: string) => kw.length > 3)
+        .map((kw: string) => sql`${votingRecord.title} ILIKE ${"%" + kw + "%"}`);
+      const titleFallback = keywordConditions.length > 0
+        ? sql`(${votingRecord.committee} = '' AND (${sql.join(keywordConditions, sql` OR `)}))`
+        : sql`FALSE`;
+      const whereClause = sql`${votingRecord.committee} = ${committee.abbreviation} OR ${titleFallback}`;
 
       const [countResult, items] = await Promise.all([
         db

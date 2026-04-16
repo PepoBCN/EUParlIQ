@@ -142,7 +142,7 @@ interface SearchResult {
   docDate: string;
 }
 
-async function semanticSearch(queryEmbedding: number[], limit: number = 15): Promise<SearchResult[]> {
+async function semanticSearch(queryEmbedding: number[], limit: number = 15, minSimilarity: number = 0.25): Promise<SearchResult[]> {
   const embeddingStr = `[${queryEmbedding.join(",")}]`;
 
   const results = await pgClient`
@@ -162,6 +162,7 @@ async function semanticSearch(queryEmbedding: number[], limit: number = 15): Pro
       d.publication_date as doc_date
     FROM document_chunks dc
     JOIN documents d ON dc.document_id = d.id
+    WHERE 1 - (dc.embedding <=> ${embeddingStr}::vector) > ${minSimilarity}
     ORDER BY dc.embedding <=> ${embeddingStr}::vector
     LIMIT ${limit}
   `;

@@ -113,6 +113,12 @@ function mapStatus(stage: string): "ongoing" | "adopted" | "rejected" | "withdra
   return "ongoing";
 }
 
+/** Known final statuses that Parltrack data may not reflect correctly */
+const STATUS_OVERRIDES: Record<string, "ongoing" | "adopted" | "rejected" | "withdrawn"> = {
+  "2021/0106(COD)": "adopted",  // AI Act - signed into law 13 June 2024
+  "2020/0374(COD)": "adopted",  // DMA - entered into force 1 November 2022
+};
+
 async function ingestDossier(dossier: ParltrackDossier): Promise<void> {
   const proc = dossier.procedure;
   const ref = proc.reference;
@@ -136,7 +142,7 @@ async function ingestDossier(dossier: ParltrackDossier): Promise<void> {
       .set({
         title: proc.title,
         type: mapProcedureType(ref),
-        status: mapStatus(proc.stage_reached || ""),
+        status: STATUS_OVERRIDES[ref] ?? mapStatus(proc.stage_reached || ""),
         responsibleCommittee: responsibleComm?.committee || null,
         rapporteur: rapporteur?.name || null,
         rapporteurMepId: rapporteur?.mepref ? String(rapporteur.mepref) : null,

@@ -5,6 +5,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { env } from "./env.js";
 import { appRouter } from "../routers.js";
 import { registerStreamingSearch } from "../streamingSearch.js";
+import { runDataFixes } from "./db.js";
 import type { Context } from "./trpc.js";
 
 const app = express();
@@ -114,8 +115,13 @@ if (env.NODE_ENV === "production") {
 // Start
 // ---------------------------------------------------------------------------
 
-app.listen(env.PORT, () => {
+app.listen(env.PORT, async () => {
   console.log(`[EUParlIQ] Server running on port ${env.PORT} (${env.NODE_ENV})`);
+  try {
+    await runDataFixes();
+  } catch (err) {
+    console.error("[EUParlIQ] Data fixes failed (non-fatal):", err);
+  }
 });
 
 export { app };

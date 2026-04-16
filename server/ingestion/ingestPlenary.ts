@@ -66,6 +66,14 @@ async function downloadCre(date: string, term: number): Promise<string> {
   return html;
 }
 
+/** Check if text is likely English by counting common function words */
+function isLikelyEnglish(text: string): boolean {
+  const words = text.toLowerCase().split(/\s+/);
+  const markers = ["the", "and", "of", "to", "in", "is", "that", "for", "this", "with", "was", "are", "have", "not"];
+  const count = markers.filter((m) => words.includes(m)).length;
+  return count >= 3;
+}
+
 function parseSpeakerTurns(html: string, targetKeywords: string[]): SpeakerTurn[] {
   const turns: SpeakerTurn[] = [];
 
@@ -127,6 +135,7 @@ function parseSpeakerTurns(html: string, targetKeywords: string[]): SpeakerTurn[
 
     const fullText = paragraphs.join("\n\n");
     if (fullText.length < 50) continue; // Skip very short interventions
+    if (!isLikelyEnglish(fullText)) continue; // Skip non-English speeches
 
     // Determine current agenda item
     let agendaItem: string | null = null;

@@ -62,6 +62,16 @@ async function fetchJson(url: string): Promise<unknown> {
   return resp.json();
 }
 
+/** Detect responsible committee from vote title keywords when API data is missing */
+function detectCommitteeFromTitle(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.includes("artificial intelligence") || lower.includes("ai act")) return "ITRE";
+  if (lower.includes("digital markets") || lower.includes("gatekeeper")) return "IMCO";
+  if (lower.includes("due diligence") || lower.includes("corporate sustainability") || lower.includes("csddd")) return "JURI";
+  if (lower.includes("digital services")) return "IMCO";
+  return "";
+}
+
 async function findTargetVotes(): Promise<string[]> {
   console.log("[votes] Scanning all votes for target files...");
   const voteIds: string[] = [];
@@ -106,7 +116,7 @@ async function ingestVote(voteId: string): Promise<number> {
     return 0;
   }
 
-  const committee = vote.responsible_committees?.[0]?.abbreviation || "";
+  const committee = vote.responsible_committees?.[0]?.abbreviation || detectCommitteeFromTitle(vote.display_title);
   let inserted = 0;
 
   for (const mv of vote.member_votes) {
