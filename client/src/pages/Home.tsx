@@ -66,10 +66,14 @@ export default function Home() {
 
   const { data: stats } = trpc.committees.stats.useQuery();
 
+  const trimmedQuery = query.trim();
+  const isQueryTooShort = trimmedQuery.length > 0 && trimmedQuery.length < 3;
+  const canSubmit = trimmedQuery.length >= 3 && !isSearching;
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim() || isSearching) return;
-    search(query.trim(), mode);
+    if (!canSubmit) return;
+    search(trimmedQuery, mode);
   };
 
   const handleFollowUp = (q: string) => {
@@ -135,13 +139,19 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              disabled={isSearching || !query.trim()}
+              disabled={!canSubmit}
               className="px-3 py-1.5 text-[11px] font-medium bg-foreground text-background rounded-md disabled:opacity-50"
             >
               {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Search"}
             </button>
           </div>
         </form>
+
+        {isQueryTooShort && phase === "idle" && (
+          <p className="max-w-3xl mx-auto mt-2 text-xs text-muted-foreground">
+            Please enter at least 3 characters.
+          </p>
+        )}
 
         {/* Results */}
         {phase !== "idle" && (

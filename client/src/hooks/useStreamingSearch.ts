@@ -53,7 +53,14 @@ export function useStreamingSearch() {
       });
 
       if (!response.ok) {
-        throw new Error(`Search failed (HTTP ${response.status})`);
+        let serverMessage: string | null = null;
+        try {
+          const body = await response.json();
+          if (body && typeof body.error === "string") serverMessage = body.error;
+        } catch {
+          // Response wasn't JSON - fall back to status-only message
+        }
+        throw new Error(serverMessage ?? `Search failed (HTTP ${response.status})`);
       }
 
       const reader = response.body?.getReader();
