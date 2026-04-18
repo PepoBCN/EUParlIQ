@@ -6,3 +6,7 @@ dist/
 .DS_Store
 .logs/
 .cache/
+
+# graphify
+graphify-out/
+.claude/
