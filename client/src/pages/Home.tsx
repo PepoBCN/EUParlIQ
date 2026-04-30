@@ -77,6 +77,13 @@ export default function Home() {
     search(q, mode);
   };
 
+  const exampleQuestions = [
+    "How does the AI Act regulate high-risk AI systems?",
+    "What progress has been made on the Corporate Sustainability Due Diligence Directive?",
+    "How does the Digital Markets Act regulate gatekeepers like Apple and Google?",
+    "What are the EU's key priorities for energy security?",
+  ];
+
   // Auto-scroll answer as it streams
   useEffect(() => {
     if (phase === "streaming" && answerRef.current) {
@@ -142,6 +149,27 @@ export default function Home() {
             </button>
           </div>
         </form>
+
+        {/* Example questions - only show when idle */}
+        {phase === "idle" && (
+          <div className="mt-8 max-w-3xl mx-auto space-y-3">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+              Try asking
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {exampleQuestions.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => handleFollowUp(q)}
+                  className="text-left text-sm px-4 py-3 rounded-lg border border-border bg-card hover:bg-muted transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Results */}
         {phase !== "idle" && (
