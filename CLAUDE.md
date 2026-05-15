@@ -10,7 +10,7 @@ EUParlIQ is an AI-powered EU parliamentary intelligence tool. It lets Brussels p
 - **Backend:** Express + tRPC v11
 - **Database:** PostgreSQL + pgvector on Railway (Drizzle ORM)
 - **Embeddings:** OpenAI text-embedding-3-small (1536 dims)
-- **AI Answers:** Claude Haiku 4.5 (quick mode) / Claude Sonnet 4.5 (deep mode)
+- **AI Answers:** Claude Haiku 4.5 (quick mode) / Claude Sonnet 4.6 (deep mode)
 - **Transcription:** AssemblyAI (committee hearings)
 - **Hosting:** Railway
 - **Package Manager:** pnpm

@@ -9,7 +9,7 @@ export const MODELS = {
   /** Quick mode - fast, cheap answers */
   quick: "claude-haiku-4-5-20251001",
   /** Deep mode - detailed, thorough answers */
-  deep: "claude-sonnet-4-5-20241022",
+  deep: "claude-sonnet-4-6",
 } as const;
 
 // ---------------------------------------------------------------------------
