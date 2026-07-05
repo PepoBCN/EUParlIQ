@@ -1,6 +1,6 @@
 # EU ParlIQ - Technical Architecture
 
-**Version**: 1.0 | **Date**: 6 April 2026 | **Author**: Claude Code (directed by Josh Feldberg)
+**Version**: 1.0 | **Date**: 6 April 2026 | **Author**: Claude Code (directed by PepoBCN)
 
 ---
 
