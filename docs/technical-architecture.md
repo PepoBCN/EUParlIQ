@@ -62,7 +62,7 @@ The UK ParlIQ codebase lives at `~/Documents/Claude builds etc/personal-projects
 **Keep**: React + Express + tRPC + Drizzle ORM + MySQL + Railway + Vite + Tailwind + shadcn/ui
 
 **Reasoning**:
-1. Josh (and Claude Code) already know this stack. The entire UK ParlIQ was built with it. Switching stacks introduces risk and learning curve for no gain.
+1. The project owner (and Claude Code) already know this stack. The entire UK ParlIQ was built with it. Switching stacks introduces risk and learning curve for no gain.
 2. Railway Hobby plan works fine for a demo/MVP. Same $5/month base + usage.
 3. MySQL on Railway handles the data volumes (EU Parliament generates less document volume than UK Parliament per committee, but more languages).
 4. The UK version's memory optimisations (two-phase search, batched embedding fetch, Pinecone offload) already solve the hard scaling problems.
@@ -743,7 +743,7 @@ Day 5: Demo deployment
 
 ### Total Estimated Timeline: 5 weeks for a working MVP
 
-This assumes Claude Code does the building with Josh directing. The transcription pipeline runs in parallel with other work, which is why it doesn't add to the critical path - but it is the riskiest element.
+This assumes Claude Code does the building with the project owner directing. The transcription pipeline runs in parallel with other work, which is why it doesn't add to the critical path - but it is the riskiest element.
 
 ### MVP Deliverables
 
